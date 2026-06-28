@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sqlite3
 from datetime import datetime
 from config import DB_PATH, MAX_HISTORY
@@ -57,5 +58,66 @@ def db_save_user(user_id, username, full_name):
     conn.commit()
     conn.close()
 
-# ... (toutes les autres fonctions de DB du code précédent)
-# Je ne répète pas tout ici pour la lisibilité, mais elles sont toutes reprises
+# ===== FONCTIONS MANQUANTES =====
+def db_get_setting(user_id, key):
+    """Récupère un paramètre utilisateur (model_alias, system_prompt, ai_mode, etc.)."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(f'SELECT {key} FROM user_settings WHERE user_id = ?', (user_id,))
+    result = c.fetchone()
+    conn.close()
+    if result is not None:
+        value = result[0]
+        if key == 'ai_mode':
+            return bool(value)
+        return value
+    if key == 'ai_mode':
+        return False
+    return None
+
+def db_set_setting(user_id, key, value):
+    """Enregistre un paramètre utilisateur."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    if key == 'ai_mode':
+        value = 1 if value else 0
+    c.execute(f'INSERT OR REPLACE INTO user_settings (user_id, {key}) VALUES (?, ?)', (user_id, value))
+    conn.commit()
+    conn.close()
+
+def db_save_history(user_id, role, content):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('INSERT INTO history (user_id, role, content) VALUES (?, ?, ?)', (user_id, role, content))
+    c.execute('''
+        DELETE FROM history 
+        WHERE id NOT IN (
+            SELECT id FROM history WHERE user_id = ? 
+            ORDER BY timestamp DESC LIMIT ?
+        )
+    ''', (user_id, MAX_HISTORY * 2))
+    conn.commit()
+    conn.close()
+
+def db_get_history(user_id):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT role, content FROM history WHERE user_id = ? ORDER BY timestamp ASC', (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [{"role": row[0], "content": row[1]} for row in rows]
+
+def db_increment_stats(key):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('UPDATE stats SET stat_value = stat_value + 1 WHERE stat_key = ?', (key,))
+    conn.commit()
+    conn.close()
+
+def db_get_stats():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT stat_key, stat_value FROM stats')
+    stats = dict(c.fetchall())
+    conn.close()
+    return stats
