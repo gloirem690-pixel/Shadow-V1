@@ -1,10 +1,48 @@
-.env
+# ===== Python =====
 __pycache__/
 *.pyc
 *.pyo
-*.log
-logs/
-shadow_bot.db
-.DS_Store
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 venv/
+env/
+.venv/
+.env
 .env.local
+.env.*.local
+
+# ===== Base de données =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== Logs =====
+logs/
+*.log
+shadow_bot.log
+
+# ===== Fichiers d'environnement =====
+.env
+.env.example
+
+# ===== IDE / OS =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== Render / Déploiement =====
+.vercel/
+.railway/
+*.pid
+
+# ===== Autres =====
+*.tmp
+*.temp
