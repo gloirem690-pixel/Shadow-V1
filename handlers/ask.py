@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from database import db_get_setting, db_set_setting
 from utils import enqueue_question, summarize_url, user_ai_mode_cache
+from utils import user_ai_mode_cache, enqueue_question, summarize_url
 
 async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
