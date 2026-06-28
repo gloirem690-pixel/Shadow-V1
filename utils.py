@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Fonctions utilitaires pour Shadow V1 :
-- Appels API OpenRouter / Groq
+- Appels API OpenRouter / Groq avec logs de débogage
 - Mémoire conversationnelle
 - Résumé de liens
 - File d'attente des questions
@@ -20,7 +20,6 @@ from database import db_get_history, db_save_history, db_get_setting, db_set_set
 # ============================================================================
 # CACHE MÉMOIRE POUR LE MODE IA
 # ============================================================================
-# Évite de lire la base de données à chaque message
 user_ai_mode_cache = {}
 
 # ============================================================================
@@ -53,7 +52,7 @@ def is_vision_compatible(alias):
     return alias in {"gemini", "gpt-20b", "gpt-120b"}
 
 # ============================================================================
-# APPELS IA
+# APPELS IA AVEC LOGS
 # ============================================================================
 
 async def ask_ai(user_id, question, image_b64=None):
@@ -67,6 +66,8 @@ async def ask_ai(user_id, question, image_b64=None):
     if not model:
         model = get_model_full(DEFAULT_MODEL)
         model_alias = DEFAULT_MODEL
+
+    print(f"🧠 Utilisation du modèle : {model_alias} ({model})")
 
     # Récupérer l'historique et le prompt système
     system_prompt = db_get_setting(user_id, 'system_prompt') or "Tu es un assistant IA utile, amical et concis."
@@ -99,8 +100,9 @@ async def ask_ai(user_id, question, image_b64=None):
     return None
 
 async def _call_openrouter(model, messages):
-    """Appelle l'API OpenRouter."""
+    """Appelle l'API OpenRouter avec logs."""
     try:
+        print(f"🔍 Appel OpenRouter avec le modèle : {model}")
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -115,15 +117,20 @@ async def _call_openrouter(model, messages):
             },
             timeout=30
         )
+        print(f"🔍 OpenRouter status : {r.status_code}")
+        print(f"🔍 OpenRouter réponse : {r.text[:300]}")  # Limité pour lisibilité
         if r.status_code == 200:
             return r.json()["choices"][0]["message"]["content"]
+        else:
+            print(f"❌ OpenRouter erreur {r.status_code}: {r.text}")
     except Exception as e:
-        print(f"OpenRouter error: {e}")
+        print(f"❌ Exception OpenRouter : {e}")
     return None
 
 async def _call_groq(model, messages):
-    """Appelle l'API Groq."""
+    """Appelle l'API Groq avec logs."""
     try:
+        print(f"🔍 Appel Groq avec le modèle : {model}")
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
@@ -137,10 +144,14 @@ async def _call_groq(model, messages):
             },
             timeout=30
         )
+        print(f"🔍 Groq status : {r.status_code}")
+        print(f"🔍 Groq réponse : {r.text[:300]}")
         if r.status_code == 200:
             return r.json()["choices"][0]["message"]["content"]
+        else:
+            print(f"❌ Groq erreur {r.status_code}: {r.text}")
     except Exception as e:
-        print(f"Groq error: {e}")
+        print(f"❌ Exception Groq : {e}")
     return None
 
 # ============================================================================
@@ -192,14 +203,12 @@ async def enqueue_question(user_id, question, update, context, image_b64=None):
         user_processing[user_id] = False
 
     if user_processing[user_id]:
-        # Mettre en file d'attente
         user_queues[user_id].append({"question": question, "image": image_b64})
         await update.message.reply_text(
             f"⏳ Question en file d'attente. Position : {len(user_queues[user_id])}"
         )
         return
 
-    # Démarrer le traitement
     user_processing[user_id] = True
     await _process_next(user_id, update, context)
 
@@ -223,7 +232,6 @@ async def _process_next(user_id, update, context):
         print(f"Process error: {e}")
         await update.message.reply_text("❌ Une erreur est survenue.")
 
-    # Passer à la question suivante
     await _process_next(user_id, update, context)
 
 # ============================================================================
@@ -252,7 +260,6 @@ async def handle_ai_message(update, context):
     ai_mode = user_ai_mode_cache.get(user_id, False) or db_get_setting(user_id, 'ai_mode')
 
     if not ai_mode:
-        # Si le mode IA n'est pas activé, ne rien faire ou réponse simple
         if is_group:
             return
         await update.message.reply_text(
