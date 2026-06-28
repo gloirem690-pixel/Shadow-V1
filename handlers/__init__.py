@@ -7,3 +7,4 @@ from .tts import text_to_speech
 from .translate import translate_command
 from .stats import stats_command
 from .memory import clear_memory
+from .ping import ping
