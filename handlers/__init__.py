@@ -1,3 +1,4 @@
+# handlers/__init__.py
 from .start import start, help_command, status
 from .ask import ask_command, vision_command, ask_on, ask_off, handle_message
 from .model import change_model, set_prompt
