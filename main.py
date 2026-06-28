@@ -4,6 +4,9 @@ import sys
 import logging
 import threading
 
+# === CRÉER LE DOSSIER LOGS S'IL N'EXISTE PAS ===
+os.makedirs('logs', exist_ok=True)
+
 from config import TELEGRAM_TOKEN, WEB_PORT
 from database import init_db
 from handlers import (
@@ -26,12 +29,9 @@ logger = logging.getLogger(__name__)
 
 # ===== Lancement du bot Telegram =====
 def run_bot():
-    """Lance le bot Telegram en polling."""
     from telegram.ext import Application, CommandHandler, MessageHandler, filters
-
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    # Commandes
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status))
@@ -47,7 +47,6 @@ def run_bot():
     app.add_handler(CommandHandler("translate", translate_command))
     app.add_handler(CommandHandler("stats", stats_command))
 
-    # Gestion des messages (mode IA)
     from handlers import handle_message
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.PHOTO, handle_message))
@@ -57,13 +56,11 @@ def run_bot():
 
 # ===== Point d'entrée =====
 if __name__ == "__main__":
-    # Initialiser la DB
     init_db()
 
-    # Démarrer le serveur web dans un thread (pour le monitoring)
+    # Lancer le serveur web dans un thread
     web_thread = threading.Thread(target=run_web_server, daemon=True)
     web_thread.start()
     logger.info(f"🌐 Serveur web démarré sur le port {WEB_PORT}")
 
-    # Démarrer le bot (bloque le thread principal)
     run_bot()
