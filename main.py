@@ -45,6 +45,7 @@ def run_bot():
     app.add_handler(CommandHandler("image", generate_image))
     app.add_handler(CommandHandler("tts", text_to_speech))
     app.add_handler(CommandHandler("translate", translate_command))
+app.add_handler(CommandHandler("ping", ping))
     app.add_handler(CommandHandler("stats", stats_command))
 
     from handlers import handle_message
