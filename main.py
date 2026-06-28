@@ -4,9 +4,6 @@ import sys
 import logging
 import threading
 
-from flask import Flask
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
-
 from config import TELEGRAM_TOKEN, WEB_PORT
 from database import init_db
 from handlers import (
@@ -27,40 +24,38 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ===== CRÉER L'APPLICATION FLASK POUR VERCEL =====
-# Vercel cherche une instance nommée "app" dans le fichier d'entrée
-app = create_app()
-
-# ===== Lancement du bot Telegram (en local ou en arrière‑plan) =====
+# ===== Lancement du bot Telegram =====
 def run_bot():
-    """Lance le bot Telegram."""
-    bot_app = Application.builder().token(TELEGRAM_TOKEN).build()
+    """Lance le bot Telegram en polling."""
+    from telegram.ext import Application, CommandHandler, MessageHandler, filters
+
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
 
     # Commandes
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(CommandHandler("help", help_command))
-    bot_app.add_handler(CommandHandler("status", status))
-    bot_app.add_handler(CommandHandler("ask", ask_command))
-    bot_app.add_handler(CommandHandler("vision", vision_command))
-    bot_app.add_handler(CommandHandler("ask_on", ask_on))
-    bot_app.add_handler(CommandHandler("ask_off", ask_off))
-    bot_app.add_handler(CommandHandler("clear_memory", clear_memory))
-    bot_app.add_handler(CommandHandler("model", change_model))
-    bot_app.add_handler(CommandHandler("setprompt", set_prompt))
-    bot_app.add_handler(CommandHandler("image", generate_image))
-    bot_app.add_handler(CommandHandler("tts", text_to_speech))
-    bot_app.add_handler(CommandHandler("translate", translate_command))
-    bot_app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("ask", ask_command))
+    app.add_handler(CommandHandler("vision", vision_command))
+    app.add_handler(CommandHandler("ask_on", ask_on))
+    app.add_handler(CommandHandler("ask_off", ask_off))
+    app.add_handler(CommandHandler("clear_memory", clear_memory))
+    app.add_handler(CommandHandler("model", change_model))
+    app.add_handler(CommandHandler("setprompt", set_prompt))
+    app.add_handler(CommandHandler("image", generate_image))
+    app.add_handler(CommandHandler("tts", text_to_speech))
+    app.add_handler(CommandHandler("translate", translate_command))
+    app.add_handler(CommandHandler("stats", stats_command))
 
     # Gestion des messages (mode IA)
     from handlers import handle_message
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    bot_app.add_handler(MessageHandler(filters.PHOTO, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_message))
 
     logger.info("🤖 Bot Telegram démarré")
-    bot_app.run_polling()
+    app.run_polling()
 
-# ===== Point d'entrée pour l'exécution locale =====
+# ===== Point d'entrée =====
 if __name__ == "__main__":
     # Initialiser la DB
     init_db()
@@ -70,5 +65,5 @@ if __name__ == "__main__":
     web_thread.start()
     logger.info(f"🌐 Serveur web démarré sur le port {WEB_PORT}")
 
-    # Démarrer le bot
+    # Démarrer le bot (bloque le thread principal)
     run_bot()
