@@ -10,9 +10,11 @@ os.makedirs('logs', exist_ok=True)
 from config import TELEGRAM_TOKEN, WEB_PORT
 from database import init_db
 from handlers import (
-    start, help_command, status, ask_command, vision_command,
-    ask_on, ask_off, clear_memory, change_model, set_prompt,
-    generate_image, text_to_speech, translate_command, stats_command
+    start, help_command, status, ask_command,
+    vision_command, ask_on, ask_off, clear_memory,
+    change_model, set_prompt, generate_image,
+    text_to_speech, translate_command, stats_command,
+    ping
 )
 from web import create_app, run_web_server
 
