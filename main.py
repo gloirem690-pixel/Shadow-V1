@@ -34,9 +34,11 @@ def run_bot():
     from telegram.ext import Application, CommandHandler, MessageHandler, filters
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
+    # --- Commandes ---
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("ping", ping))                 # ← ajouté
     app.add_handler(CommandHandler("ask", ask_command))
     app.add_handler(CommandHandler("vision", vision_command))
     app.add_handler(CommandHandler("ask_on", ask_on))
@@ -47,9 +49,9 @@ def run_bot():
     app.add_handler(CommandHandler("image", generate_image))
     app.add_handler(CommandHandler("tts", text_to_speech))
     app.add_handler(CommandHandler("translate", translate_command))
-app.add_handler(CommandHandler("ping", ping))
-    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("stats", stats_command))       # ← ligne 51
 
+    # --- Gestion des messages (mode IA) ---
     from handlers import handle_message
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.PHOTO, handle_message))
